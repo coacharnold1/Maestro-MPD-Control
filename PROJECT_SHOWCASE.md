@@ -51,7 +51,12 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 ## 🎯 **Perfect For**
 
 ### 🏠 **Home Media Servers**
-- Raspberry Pi music servers
+- ### 🏢 **Multi-Room Audio**
+- See Ras-Pi-CLient.md for a a very nice streming client.  I use this in my bedroom.  It is not synced very well. You will need to config snapcast for that.
+- Restaurant/cafe background music
+- Office sound systems  
+- Home audio distribution
+
 - NAS-based audio systems
 - Dedicated HTPC setups
 
@@ -127,7 +132,7 @@ Join hundreds of users who have transformed their music servers:
 
 ## 📚 **Documentation**
 
-- 📖 **[Complete Setup Guide](QUICk_SETUP.md)** - Get started immediately
+- 📖 **[Complete Setup Guide](QUICK_SETUP.md)** - Get started immediately
 - 🐳 **[Docker Documentation](DOCKER_USAGE.md)** - Advanced deployment
 - 📋 **[Configuration Reference](README.md)** - All options explained
 - 🔄 **[Changelog](CHANGELOG.md)** - Version history and features
