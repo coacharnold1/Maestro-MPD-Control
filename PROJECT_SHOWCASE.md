@@ -61,6 +61,7 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 - Music discovery and organization
 
 ### 🏢 **Multi-Room Audio**
+- See Ras-Pi-CLient.md for a a very nice streming client.  I use this in my bedroom.  It is not synced very well. You will need to config snapcast for that.
 - Restaurant/cafe background music
 - Office sound systems  
 - Home audio distribution
