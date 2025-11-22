@@ -45,7 +45,7 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 ![Radio Stations](screenshots/Screenshot_Random-and-Radio.png)
 *Create and manage genre-based radio stations for automatic playlist generation*
 
-![Last.fm Charts](screenshots/lastfm-charts.png)
+![Last.fm Charts](screenshots/Screenshot_LAST-FM-Charts.png)
 *Beautiful charts showing your personal music statistics*
 
 ## 🎯 **Perfect For**
@@ -126,15 +126,15 @@ Join hundreds of users who have transformed their music servers:
 
 ## 📚 **Documentation**
 
-- 📖 **[Complete Setup Guide](QUICKSTART.md)** - Get started immediately
+- 📖 **[Complete Setup Guide](QUICk_SETUP.md)** - Get started immediately
 - 🐳 **[Docker Documentation](DOCKER_USAGE.md)** - Advanced deployment
-- 📋 **[Configuration Reference](README.md#configuration)** - All options explained
+- 📋 **[Configuration Reference](README.md)** - All options explained
 - 🔄 **[Changelog](CHANGELOG.md)** - Version history and features
 
 ---
 
 ### 🎵 **Ready to revolutionize your music server?**
 
-[**Get Started Now →**](QUICKSTART.md) • [**View Documentation →**](README.md) • [**Report Issues →**](issues)
+[**Get Started Now →**](QUICk_SETUP.md) • [**View Documentation →**](README.md) • [**Report Issues →**](issues)
 
 *Transform your MPD setup into a modern, beautiful music experience in under a minute!*
