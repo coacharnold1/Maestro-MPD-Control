@@ -1,6 +1,6 @@
 #I use the following simple client for multi room playback.  
 #I use a bare rasberry pi running rasbian with a nice USB DAC attached and configured. 
-#Install MPV player, then install the below script as a systemd service file. 
+#Install MPV player, then install the below # script as a systemd service file. 
 #HTTP streaming is already enaled in MPD.conf.   
 #If using on a windows machine it might get more complicated,  ask Claude.
 
