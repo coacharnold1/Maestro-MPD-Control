@@ -66,7 +66,8 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 - Music discovery and organization
 
 ### 🏢 **Multi-Room Audio**
-- See Ras-Pi-CLient.md for a a very nice streming client.  I use this in my bedroom.  It is not synced very well. You will need to config snapcast for that.
+[**Report Issues →**](issues)
+[**See Ras-Pi-Client**](Ras-Pi-CLient.md) for a a very nice streming client.  I use this in my bedroom.  It is not synced very well. You will need to config snapcast for that.
 - Restaurant/cafe background music
 - Office sound systems  
 - Home audio distribution
@@ -80,7 +81,7 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/yourusername/maestro-mpd-control.git
+git clone https://github.com/coacharnold1/maestro-mpd-control.git
 cd maestro-mpd-control
 
 # 2. Run the interactive setup
@@ -141,6 +142,6 @@ Join hundreds of users who have transformed their music servers:
 
 ### 🎵 **Ready to revolutionize your music server?**
 
-[**Get Started Now →**](QUICk_SETUP.md) • [**View Documentation →**](README.md) • [**Report Issues →**](issues)
+[**Get Started Now →**](QUICK_SETUP.md) • [**View Documentation →**](README.md) • [**Report Issues →**](issues)
 
 *Transform your MPD setup into a modern, beautiful music experience in under a minute!*
