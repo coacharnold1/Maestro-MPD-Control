@@ -29,7 +29,7 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 ## 📸 **See It In Action**
 
 ### Desktop Experience
-![Desktop Interface](screenshots/desktop-main.png)
+![Desktop Interface](screenshots/Screenshot_Main.png)
 *Clean, professional interface with large album art and intuitive controls*
 
 ### Mobile Experience
@@ -39,10 +39,10 @@ Maestro MPD Control is a sleek, responsive web interface that brings your Music 
 ### Theme Variety
 | Dark Theme | Light Theme | High Contrast | Desert Theme |
 |------------|-------------|---------------|--------------|
-| ![Dark](screenshots/theme-dark.png) | ![Light](screenshots/theme-light.png) | ![HC](screenshots/theme-hc.png) | ![Desert](screenshots/theme-desert.png) |
+| ![Dark](screenshots/Main.png) | ![HC](screenshots/Screenshot_High-Contrast-Theme.png) | ![Desert](screenshots/Screenshot_Main.png) |
 
 ### Advanced Features
-![Radio Stations](screenshots/radio-stations.png)
+![Radio Stations](screenshots/Screenshot_Random-and-Radio.png)
 *Create and manage genre-based radio stations for automatic playlist generation*
 
 ![Last.fm Charts](screenshots/lastfm-charts.png)
