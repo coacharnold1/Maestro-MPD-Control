@@ -1,5 +1,3 @@
-# Maestro-MPD-Control
-A containerized MPD based sever and web control app.
 # 🎵 Maestro MPD Control - Docker Edition
 
 [![Docker](https://img.shields.io/badge/docker-ready-blue.svg)](https://www.docker.com/)
@@ -9,7 +7,7 @@ A containerized MPD based sever and web control app.
 
 A modern, responsive web interface for **Music Player Daemon (MPD)** with complete Docker support. Features 4 beautiful themes, mobile-responsive design, and advanced music management capabilities including recently fixed album discovery.
 
-![MPD Web Control Screenshot](screenshot.png)
+![MPD Web Control Screenshot](screenshots/Screenshot_Desert-Theme.png)
 *Screenshot showing the Desert theme with album art and playback controls*
 
 ## ✨ Features
@@ -131,7 +129,7 @@ The interactive setup script will guide you through:
 
 | Dark | Light | High Contrast | Desert |
 |------|-------|---------------|--------|
-| ![Dark Theme](themes/dark.png) | ![Light Theme](themes/light.png) | ![High Contrast](themes/high-contrast.png) | ![Desert Theme](themes/desert.png) |
+| ![Dark Theme](screenshots/Screenshot_Main.png) | ![High Contrast](screenshots/Screenshot_High-Contrast-Theme.png) | ![Desert Theme](screenshots/Screenshot_Desert-Theme.png) |
 
 ## ⚙️ Configuration
 
