@@ -101,11 +101,21 @@ cleanup_docker_images() {
         "mpd-web-control"
         "maestro-mpd-control"
         "mpd-maestro"
+        "maestro-mpd-control-web"
+        "vimagick/mpd"
     )
     
     for image in "${images[@]}"; do
+        # Check for images with this name (any tag)
         if docker images --format "table {{.Repository}}" | grep -q "^${image}$" 2>/dev/null; then
             log_info "Removing Docker image: $image"
+            docker rmi "$image" --force 2>/dev/null || true
+            log_success "Image $image removed"
+        fi
+        
+        # Also check for images with tags
+        if docker images --format "table {{.Repository}}:{{.Tag}}" | grep -q "^${image}:" 2>/dev/null; then
+            log_info "Removing Docker image with tags: $image"
             docker rmi "$image" --force 2>/dev/null || true
             log_success "Image $image removed"
         fi
