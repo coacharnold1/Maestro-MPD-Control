@@ -414,7 +414,9 @@ configure_recent_dirs() {
     echo ""
     echo "Leave empty to scan entire library (slower but comprehensive)"
     echo ""
-    read -p "Recent music directory names (comma-separated) []: " RECENT_DIRS
+    echo -e "${YELLOW}SYNTAX: Use commas without spaces: 'Downloads,Recent' not 'Downloads, Recent'${NC}"
+    echo ""
+    read -p "Recent music directory names (comma-separated, no spaces) []: " RECENT_DIRS
 }
 
 # Function to detect and resolve MPD port conflicts
@@ -667,8 +669,24 @@ if [ "$SKIP_CONFIG" != "true" ]; then
         2)
             echo ""
             echo "Enter MPD server details:"
-            read -p "MPD Host-(Some Users May need to put their local IP in here as opposed to) [localhost]: " MPD_HOST
-            MPD_HOST=${MPD_HOST:-localhost}
+            echo ""
+            echo -e "${YELLOW}DOCKER NOTE: 'localhost' won't work from inside containers!${NC}"
+            echo "Docker containers need your machine's IP address to connect to MPD."
+            echo ""
+            
+            # Auto-detect host IP
+            HOST_IP=$(ip route get 1.1.1.1 2>/dev/null | grep -oP 'src \K\S+' | head -1)
+            if [ -n "$HOST_IP" ]; then
+                echo -e "${GREEN}Detected your IP address: $HOST_IP${NC}"
+                read -p "MPD Host [$HOST_IP]: " MPD_HOST
+                MPD_HOST=${MPD_HOST:-$HOST_IP}
+            else
+                echo "Could not auto-detect IP address."
+                read -p "MPD Host (use your machine's IP, not localhost): " MPD_HOST
+                if [ "$MPD_HOST" = "localhost" ] || [ "$MPD_HOST" = "127.0.0.1" ]; then
+                    print_warning "Warning: 'localhost' may not work from Docker containers!"
+                fi
+            fi
             
             read -p "MPD Port [6600]: " MPD_PORT
             MPD_PORT=${MPD_PORT:-6600}
