@@ -354,6 +354,27 @@ create_basic_config() {
         MUSIC_DIR=${MUSIC_DIR:-/home/$USER/Music}
         sed -i "s|MUSIC_DIRECTORY=.*|MUSIC_DIRECTORY=$MUSIC_DIR|" config.env
         
+        # Ask for recent directories
+        echo
+        echo "📁 Recent Added Configuration"
+        echo "=============================="
+        echo "The 'Recent Added' page can scan specific directories for newly added music."
+        echo "Examples: downloads, new_music, staging, incoming"
+        echo
+        read -p "Enter directories to scan for recent music (comma-separated) or leave blank for entire collection: " RECENT_DIRS
+        
+        if [ -n "$RECENT_DIRS" ]; then
+            # Add to config.env if it has RECENT_MUSIC_DIRS field
+            if grep -q "RECENT_MUSIC_DIRS" config.env; then
+                sed -i "s|RECENT_MUSIC_DIRS=.*|RECENT_MUSIC_DIRS=$RECENT_DIRS|" config.env
+            else
+                echo "RECENT_MUSIC_DIRS=$RECENT_DIRS" >> config.env
+            fi
+            log_success "Recent directories configured: $RECENT_DIRS"
+        else
+            log_info "Recent Added will scan entire music collection"
+        fi
+        
         log_success "Configuration file created: config.env"
     else
         log_success "Configuration file already exists: config.env"
@@ -374,6 +395,41 @@ configure_docker_setup() {
     done
     MUSIC_DIR=$(realpath "$MUSIC_DIR")
     
+    # Recent music directories for "Recent Added" feature
+    echo
+    echo "📁 Recent Added Configuration"
+    echo "=============================="
+    echo "The 'Recent Added' page can scan specific directories for newly added music."
+    echo "This is much faster than scanning your entire collection."
+    echo "Examples: downloads, new_music, staging, incoming"
+    echo
+    read -p "Enter directories to scan for recent music (comma-separated) or leave blank for entire collection: " RECENT_DIRS
+    
+    if [ -n "$RECENT_DIRS" ]; then
+        # Validate recent directories exist
+        IFS=',' read -ra DIRS <<< "$RECENT_DIRS"
+        VALID_RECENT_DIRS=""
+        for dir in "${DIRS[@]}"; do
+            # Trim whitespace
+            dir=$(echo "$dir" | xargs)
+            # Check if it's a relative path under music directory
+            if [ -d "$MUSIC_DIR/$dir" ]; then
+                VALID_RECENT_DIRS="$VALID_RECENT_DIRS$dir,"
+                log_success "Found recent directory: $MUSIC_DIR/$dir"
+            elif [ -d "$dir" ]; then
+                VALID_RECENT_DIRS="$VALID_RECENT_DIRS$dir,"
+                log_success "Found recent directory: $dir"
+            else
+                log_warning "Directory not found, skipping: $dir"
+            fi
+        done
+        # Remove trailing comma
+        RECENT_DIRS=${VALID_RECENT_DIRS%,}
+    else
+        RECENT_DIRS=""
+        log_info "Recent Added will scan entire music collection"
+    fi
+    
     # Port configuration
     read -p "Web interface port [5003]: " WEB_PORT
     WEB_PORT=${WEB_PORT:-5003}
@@ -393,6 +449,7 @@ configure_docker_setup() {
     # Generate .env file
     cat > .env << EOF
 MUSIC_DIRECTORY=$MUSIC_DIR
+RECENT_MUSIC_DIRS=$RECENT_DIRS
 WEB_PORT=$WEB_PORT
 APP_PORT=5003
 APP_HOST=0.0.0.0
@@ -427,16 +484,37 @@ configure_audio_for_docker() {
     log_info "Configuring audio for containerized MPD..."
     
     USER_ID=$(id -u)
+    GROUP_ID=$(id -g)
     
-    # Add user to audio group if needed
+    # Ensure user is in audio group
     if ! groups "$USER" | grep -q audio; then
+        log_info "Adding user to audio group for sound card access..."
         sudo usermod -aG audio "$USER"
-        log_warning "Added to audio group - may need logout/login"
+        log_warning "Added to audio group - you may need to logout/login for audio to work"
     fi
     
-    # Create MPD config with audio
+    # Detect audio system
+    PULSE_AVAILABLE=false
+    ALSA_AVAILABLE=false
+    
+    if command -v pulseaudio >/dev/null 2>&1 && pulseaudio --check; then
+        PULSE_AVAILABLE=true
+        log_success "PulseAudio detected and running"
+    fi
+    
+    if [ -e /dev/snd/controlC0 ]; then
+        ALSA_AVAILABLE=true
+        log_success "ALSA audio devices detected"
+    fi
+    
+    if [ "$PULSE_AVAILABLE" = false ] && [ "$ALSA_AVAILABLE" = false ]; then
+        log_warning "No audio system detected - audio may not work"
+    fi
+    
+    # Create MPD config with proper audio setup
     mkdir -p docker
     cat > docker/mpd.conf << EOF
+# MPD Configuration for Docker with Audio Support
 bind_to_address     "0.0.0.0"
 port                "6600"
 music_directory     "/music"
@@ -444,23 +522,47 @@ db_file             "/var/lib/mpd/mpd.db"
 log_file            "/var/log/mpd/mpd.log"
 state_file          "/var/lib/mpd/mpdstate"
 playlist_directory  "/var/lib/mpd/playlists"
+pid_file            "/var/lib/mpd/mpd.pid"
 
+# Audio outputs (multiple for compatibility)
+EOF
+
+    # Add PulseAudio if available
+    if [ "$PULSE_AVAILABLE" = true ]; then
+        cat >> docker/mpd.conf << EOF
 audio_output {
     type        "pulse"
-    name        "PulseAudio"
+    name        "PulseAudio Output"
     enabled     "yes"
     server      "unix:/run/user/$USER_ID/pulse/native"
 }
 
+EOF
+    fi
+    
+    # Always add ALSA as fallback
+    cat >> docker/mpd.conf << EOF
 audio_output {
-    type        "alsa" 
-    name        "ALSA"
+    type        "alsa"
+    name        "ALSA Output"
     enabled     "yes"
+    device      "default"
+    mixer_type  "software"
 }
 
+# Alternative ALSA output
+audio_output {
+    type        "alsa"
+    name        "ALSA hw:0,0"
+    enabled     "no"
+    device      "hw:0,0"
+    mixer_type  "hardware"
+}
+
+# HTTP Streaming for web access
 audio_output {
     type        "httpd"
-    name        "Web Stream"
+    name        "HTTP Audio Stream"
     encoder     "lame"
     port        "8002"
     bind_to_address "0.0.0.0"
@@ -470,18 +572,33 @@ audio_output {
     enabled     "yes"
 }
 
-max_connections     "10"
-connection_timeout  "60"
-auto_update         "yes"
+# Performance and compatibility settings
+max_connections             "20"
+connection_timeout          "60"
+auto_update                 "yes"
+follow_outside_symlinks     "yes"
+follow_inside_symlinks      "yes"
+save_absolute_paths_in_playlists "no"
+
+# Logging
+log_level                   "notice"
 EOF
     
-    # Add audio settings to .env
+    # Add comprehensive audio settings to .env
     cat >> .env << EOF
+
+# Audio Configuration
 USER_ID=$USER_ID
+GROUP_ID=$GROUP_ID
 PULSE_SOCKET_PATH=/run/user/$USER_ID/pulse
+AUDIO_GID=$(getent group audio | cut -d: -f3)
 EOF
 
     log_success "Audio configuration completed"
+    echo "   • PulseAudio: $([ "$PULSE_AVAILABLE" = true ] && echo "enabled" || echo "not available")"
+    echo "   • ALSA: $([ "$ALSA_AVAILABLE" = true ] && echo "enabled" || echo "not available")"
+    echo "   • HTTP streaming: enabled on port 8002"
+    echo "   • User ID: $USER_ID (audio group: $(getent group audio | cut -d: -f3 || echo "not found"))"
 }
 
 # Main execution flow
