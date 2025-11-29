@@ -1544,8 +1544,26 @@
                 }, 500);
             });
 
-            // Check on page load in case update is already in progress
-            checkDbUpdateStatus();
+            // Initialize notification state on page load
+            function initDbUpdateStatus() {
+                // First, hide the notification and reset button state
+                dbUpdateStatus.style.display = 'none';
+                dbUpdateStatus.style.backgroundColor = '#3498db';
+                updateDbBtn.disabled = false;
+                updateDbBtn.style.opacity = '1';
+                
+                // Clear any existing polling interval
+                if (dbUpdateCheckInterval) {
+                    clearInterval(dbUpdateCheckInterval);
+                    dbUpdateCheckInterval = null;
+                }
+                
+                // Then check actual status
+                checkDbUpdateStatus();
+            }
+
+            // Initialize on page load
+            initDbUpdateStatus();
 
 
             // Initial UI update on page load (ensures buttons are correctly disabled/enabled)
