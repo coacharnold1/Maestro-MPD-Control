@@ -142,7 +142,8 @@ else:
 
 # Load persisted settings and apply precedence: env vars > settings.json > defaults
 _settings = load_settings()
-app.config['THEME'] = _settings.get('theme', 'dark')
+# Theme: environment variable overrides settings.json, which overrides default
+app.config['THEME'] = os.getenv('DEFAULT_THEME', _settings.get('theme', 'dark'))
 if not LASTFM_API_KEY:
     LASTFM_API_KEY = _settings.get('lastfm_api_key', '')
 if not LASTFM_SHARED_SECRET:
