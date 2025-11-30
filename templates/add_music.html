@@ -318,47 +318,54 @@
             box-shadow: none;
         }
 
-        /* Styles for the message display area */
+        /* Enhanced Styles for the message display area */
         #message-area {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 15px 20px;
-            border-radius: 5px;
+            padding: 16px 20px;
+            border-radius: 12px;
             color: white;
-            font-weight: bold;
+            font-weight: 600;
             z-index: 1000;
             opacity: 0;
-            transition: opacity 0.3s;
+            transform: translateX(100%);
+            transition: all 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            min-width: 280px;
+            max-width: 400px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         #message-area.show {
             opacity: 1;
+            transform: translateX(0);
         }
 
         #message-area.info {
-            background-color: #2ecc71;
-            /* Green for info */
-            color: #1a1a1a;
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.95) 0%, rgba(39, 174, 96, 0.95) 100%);
+            color: #ffffff;
+            border-left: 4px solid #27ae60;
         }
 
         #message-area.success {
-            background-color: #27ae60;
-            /* Consistent green for success */
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.95) 0%, rgba(39, 174, 96, 0.95) 100%);
             color: #ffffff;
+            border-left: 4px solid #27ae60;
         }
 
         #message-area.error {
-            background-color: #e74c3c;
-            /* Red for error */
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.95) 0%, rgba(192, 57, 43, 0.95) 100%);
             color: #ffffff;
+            border-left: 4px solid #c0392b;
         }
 
         #message-area.warning {
-            /* New style for warnings */
-            background-color: #f39c12;
-            /* Orange */
-            color: #1a1a1a;
+            background: linear-gradient(135deg, rgba(241, 196, 15, 0.95) 0%, rgba(243, 156, 18, 0.95) 100%);
+            color: #2c3e50;
+            border-left: 4px solid #f39c12;
+            font-weight: 700;
         }
 
 
@@ -1097,6 +1104,22 @@
                                                 .then(response => response.json())
                                                 .then(modeData => {
                                                     console.log('Radio station mode set:', modeData);
+                                                    
+                                                    // Enable auto-fill for radio station mode
+                                                    fetch('/toggle_auto_fill', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({ active: true })
+                                                    })
+                                                    .then(response => {
+                                                        if (response.ok) {
+                                                            console.log('Auto-fill enabled for radio station mode');
+                                                        }
+                                                    })
+                                                    .catch(error => {
+                                                        console.error('Error enabling auto-fill for radio station:', error);
+                                                    });
+                                                    
                                                     // Trigger auto-fill status update to reflect radio station mode
                                                     fetch('/get_auto_fill_status')
                                                         .then(response => response.json())

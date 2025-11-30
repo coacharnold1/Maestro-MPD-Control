@@ -24,6 +24,7 @@ import random
 
 # Settings and data files
 SETTINGS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'settings.json')
+RADIO_STATIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'radio_stations.json')
 
 # Settings helpers
 def load_settings():
@@ -527,38 +528,47 @@ def auto_fill_monitor():
                     seed_artist = status_info.get('artist')
                     seed_genre = status_info.get('genre')
 
-                    # Radio station mode: use station genres instead of current track genre
+                    # Check if we're in radio station mode
                     if radio_station_mode and radio_station_genres:
-                        seed_genre = random.choice(radio_station_genres)
-                        print(f"Radio station mode: Using radio genre '{seed_genre}' from station '{radio_station_name}'")
+                        socketio.emit('server_message', {
+                            'type': 'info', 
+                            'text': f'🎵 Radio Station Auto-fill: Adding {num_tracks_to_add} tracks from station "{radio_station_name}"...'
+                        })
+                        # Use radio station auto-fill function
+                        socketio.start_background_task(
+                            target=perform_radio_station_auto_fill,
+                            genres=radio_station_genres,
+                            num_tracks=num_tracks_to_add
+                        )
                     else:
+                        # Regular auto-fill mode using similar artists
                         # Fallback to last known if current is N/A
                         if seed_genre == 'N/A' and auto_fill_last_genre != 'N/A':
                             seed_genre = auto_fill_last_genre
 
-                    # Always check for artist fallback
-                    if seed_artist == 'N/A' and auto_fill_last_artist != 'N/A':
-                        seed_artist = auto_fill_last_artist
+                        # Always check for artist fallback
+                        if seed_artist == 'N/A' and auto_fill_last_artist != 'N/A':
+                            seed_artist = auto_fill_last_artist
 
-                    if seed_artist == 'N/A':
-                        socketio.emit('server_message', {
-                            'type': 'warning', 
-                            'text': 'Auto-fill: No current or last known artist to base suggestions on. Skipping auto-fill.'
-                        })
-                    else:
-                        socketio.emit('server_message', {
-                            'type': 'info', 
-                            'text': f'Auto-filling {num_tracks_to_add} tracks (based on "{seed_artist}")...'
-                        })
-                        # Run the add tracks logic in a non-blocking way
-                        socketio.start_background_task(
-                            target=perform_add_random_tracks_logic,
-                            artist_name_input=seed_artist,
-                            num_tracks=num_tracks_to_add,
-                            clear_playlist=False,
-                            filter_by_genre=auto_fill_genre_filter_enabled,
-                            seed_genre=seed_genre
-                        )
+                        if seed_artist == 'N/A':
+                            socketio.emit('server_message', {
+                                'type': 'warning', 
+                                'text': 'Auto-fill: No current or last known artist to base suggestions on. Skipping auto-fill.'
+                            })
+                        else:
+                            socketio.emit('server_message', {
+                                'type': 'info', 
+                                'text': f'Auto-filling {num_tracks_to_add} tracks (based on "{seed_artist}")...'
+                            })
+                            # Run the add tracks logic in a non-blocking way
+                            socketio.start_background_task(
+                                target=perform_add_random_tracks_logic,
+                                artist_name_input=seed_artist,
+                                num_tracks=num_tracks_to_add,
+                                clear_playlist=False,
+                                filter_by_genre=auto_fill_genre_filter_enabled,
+                                seed_genre=seed_genre
+                            )
                 elif current_queue_length < auto_fill_min_queue_length:
                     # Still below threshold but in cooldown period
                     cooldown_remaining = int(auto_fill_cooldown - (current_time - last_auto_fill_time))
@@ -1172,6 +1182,75 @@ def perform_add_random_tracks_logic(artist_name_input, num_tracks, clear_playlis
     except Exception as e:
         print(f"Error during track addition logic: {e}")
         socketio.emit('server_message', {'type': 'error', 'text': f'Error adding tracks to MPD: {e}'})
+
+def perform_radio_station_auto_fill(genres, num_tracks):
+    """
+    Radio station specific auto-fill function that adds tracks based on station genres.
+    Does not use Last.fm similar artists - only uses the station's genres for selection.
+    """
+    print(f"Performing radio station auto-fill: genres={genres}, num_tracks={num_tracks}")
+    
+    try:
+        client = connect_mpd_client()
+        if not client:
+            socketio.emit('server_message', {'type': 'error', 'text': 'Could not connect to MPD for radio station auto-fill.'})
+            return
+
+        candidate_uris = []
+        
+        # Get songs from all station genres
+        for genre in genres:
+            try:
+                genre_songs = client.find('genre', genre)
+                print(f"Found {len(genre_songs)} songs for radio genre: {genre}")
+                
+                # Add all songs from this genre to candidates
+                for song in genre_songs:
+                    file_path = song.get('file')
+                    if file_path and file_path not in candidate_uris:
+                        candidate_uris.append(file_path)
+                        
+            except Exception as e:
+                print(f"Error fetching songs for genre '{genre}': {e}")
+        
+        if not candidate_uris:
+            socketio.emit('server_message', {
+                'type': 'warning', 
+                'text': f'No songs found for radio station genres: {', '.join(genres)}'
+            })
+            client.disconnect()
+            return
+        
+        # Randomly select tracks from candidates
+        random.shuffle(candidate_uris)
+        tracks_to_add = candidate_uris[:num_tracks]
+        
+        # Add selected tracks to playlist
+        added_count = 0
+        for track_uri in tracks_to_add:
+            try:
+                client.add(track_uri)
+                added_count += 1
+            except Exception as e:
+                print(f"Error adding radio station track {track_uri}: {e}")
+        
+        client.disconnect()
+        
+        genre_names = ', '.join(genres)
+        socketio.emit('server_message', {
+            'type': 'success', 
+            'text': f'🎵 Radio Station Auto-fill: Added {added_count} tracks from genres: {genre_names}'
+        })
+        
+        # Trigger status update
+        socketio.start_background_task(target=lambda: socketio.emit('mpd_status', get_mpd_status_for_display()))
+        
+    except Exception as e:
+        print(f"Error during radio station auto-fill: {e}")
+        socketio.emit('server_message', {
+            'type': 'error', 
+            'text': f'Radio station auto-fill error: {e}'
+        })
 
 # --- Web Routes ---
 
@@ -2448,7 +2527,10 @@ def set_auto_fill_settings():
             'min_queue_length': auto_fill_min_queue_length,
             'num_tracks_min': auto_fill_num_tracks_min,
             'num_tracks_max': auto_fill_num_tracks_max,
-            'genre_filter_enabled': auto_fill_genre_filter_enabled
+            'genre_filter_enabled': auto_fill_genre_filter_enabled,
+            'radio_station_mode': radio_station_mode,
+            'radio_station_name': radio_station_name,
+            'radio_station_genres': radio_station_genres
         })
         return ('', 200)
     except ValueError:
@@ -2883,13 +2965,11 @@ def test_connect():
         'min_queue_length': auto_fill_min_queue_length,
         'num_tracks_min': auto_fill_num_tracks_min,
         'num_tracks_max': auto_fill_num_tracks_max,
-        'genre_filter_enabled': auto_fill_genre_filter_enabled
+        'genre_filter_enabled': auto_fill_genre_filter_enabled,
+        'radio_station_mode': radio_station_mode,
+        'radio_station_name': radio_station_name,
+        'radio_station_genres': radio_station_genres
     })
-
-# SocketIO Events
-@socketio.on('connect')
-def test_connect():
-    print('Client connected')
 
 @socketio.on('disconnect')
 def test_disconnect():
